@@ -1458,7 +1458,14 @@ impl BlobChunkInfo for DirectChunkInfoV6 {
         let state = self.state();
         self.v5_chunk(&state)
             .flags
-            .contains(BlobChunkFlags::ENCYPTED)
+            .contains(BlobChunkFlags::ENCRYPTED)
+    }
+
+    fn has_crc(&self) -> bool {
+        let state = self.state();
+        self.v5_chunk(&state)
+            .flags
+            .contains(BlobChunkFlags::HAS_CRC)
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -1549,6 +1556,10 @@ impl BlobChunkInfo for TarfsChunkInfoV6 {
     }
 
     fn is_encrypted(&self) -> bool {
+        false
+    }
+
+    fn has_crc(&self) -> bool {
         false
     }
 

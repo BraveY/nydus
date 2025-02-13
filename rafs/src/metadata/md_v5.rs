@@ -249,6 +249,10 @@ impl BlobChunkInfo for V5IoChunk {
         false
     }
 
+    fn has_crc(&self) -> bool {
+        self.flags.contains(BlobChunkFlags::HAS_CRC)
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
