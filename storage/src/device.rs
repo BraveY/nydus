@@ -637,9 +637,11 @@ bitflags! {
         /// Chunk is a hole, with all data as zero.
         const _HOLECHUNK = 0x0000_0002;
         /// Chunk data is encrypted.
-        const ENCYPTED = 0x0000_0004;
+        const ENCRYPTED = 0x0000_0004;
         /// Chunk data is merged into a batch chunk.
         const BATCH = 0x0000_0008;
+        /// Chunk data includes a CRC checksum.
+        const HAS_CRC = 0x0000_0010;
     }
 }
 
@@ -707,6 +709,9 @@ pub trait BlobChunkInfo: Any + Sync + Send {
     /// Check whether the chunk is encrypted or not.
     fn is_encrypted(&self) -> bool;
 
+    // Check whether the chunk has CRC checksum or not.
+    fn has_crc(&self) -> bool;
+
     fn as_any(&self) -> &dyn Any;
 }
 
@@ -762,6 +767,10 @@ impl BlobChunkInfo for BlobIoChunk {
 
     fn is_encrypted(&self) -> bool {
         self.0.is_encrypted()
+    }
+
+    fn has_crc(&self) -> bool {
+        self.0.has_crc()
     }
 
     fn as_any(&self) -> &dyn Any {

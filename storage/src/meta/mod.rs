@@ -1391,6 +1391,13 @@ impl BlobMetaChunkArray {
         }
     }
 
+    fn has_crc(&self, index: usize) -> bool {
+        match self {
+            BlobMetaChunkArray::V1(v) => v[index].has_crc(),
+            BlobMetaChunkArray::V2(v) => v[index].has_crc(),
+        }
+    }
+
     fn _get_chunk_index_nocheck<T: BlobMetaChunkInfo>(
         state: &BlobCompressionContext,
         chunks: &[T],
@@ -1889,6 +1896,10 @@ impl BlobChunkInfo for BlobMetaChunk {
         self.meta.chunk_info_array.is_encrypted(self.chunk_index)
     }
 
+    fn has_crc(&self) -> bool {
+        self.meta.chunk_info_array.has_crc(self.chunk_index)
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -1960,6 +1971,9 @@ pub trait BlobMetaChunkInfo {
 
     /// Check whether chunk data is encrypted or not.
     fn is_encrypted(&self) -> bool;
+
+    /// Check whether chunk data has CRC or not.
+    fn has_crc(&self) -> bool;
 
     /// Check whether the blob chunk is compressed or not.
     ///

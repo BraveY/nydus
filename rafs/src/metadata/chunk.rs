@@ -251,11 +251,11 @@ impl ChunkWrapper {
     /// Check whether the chunk is encrypted or not.
     pub fn is_encrypted(&self) -> bool {
         match self {
-            ChunkWrapper::V5(c) => c.flags.contains(BlobChunkFlags::ENCYPTED),
-            ChunkWrapper::V6(c) => c.flags.contains(BlobChunkFlags::ENCYPTED),
+            ChunkWrapper::V5(c) => c.flags.contains(BlobChunkFlags::ENCRYPTED),
+            ChunkWrapper::V6(c) => c.flags.contains(BlobChunkFlags::ENCRYPTED),
             ChunkWrapper::Ref(c) => as_blob_v5_chunk_info(c.deref())
                 .flags()
-                .contains(BlobChunkFlags::ENCYPTED),
+                .contains(BlobChunkFlags::ENCRYPTED),
         }
     }
 
@@ -263,8 +263,8 @@ impl ChunkWrapper {
     pub fn set_encrypted(&mut self, encrypted: bool) {
         self.ensure_owned();
         match self {
-            ChunkWrapper::V5(c) => c.flags.set(BlobChunkFlags::ENCYPTED, encrypted),
-            ChunkWrapper::V6(c) => c.flags.set(BlobChunkFlags::ENCYPTED, encrypted),
+            ChunkWrapper::V5(c) => c.flags.set(BlobChunkFlags::ENCRYPTED, encrypted),
+            ChunkWrapper::V6(c) => c.flags.set(BlobChunkFlags::ENCRYPTED, encrypted),
             ChunkWrapper::Ref(_c) => panic!("unexpected"),
         }
     }
@@ -330,7 +330,7 @@ impl ChunkWrapper {
                     c.flags |= BlobChunkFlags::COMPRESSED;
                 }
                 if is_encrypted {
-                    c.flags |= BlobChunkFlags::ENCYPTED;
+                    c.flags |= BlobChunkFlags::ENCRYPTED;
                 }
             }
             ChunkWrapper::Ref(_c) => panic!("unexpected"),

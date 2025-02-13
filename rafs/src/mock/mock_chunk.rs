@@ -70,6 +70,10 @@ impl BlobChunkInfo for MockChunkInfo {
         false
     }
 
+    fn has_crc(&self) -> bool {
+        self.c_flags.contains(BlobChunkFlags::HAS_CRC)
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
