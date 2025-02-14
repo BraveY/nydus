@@ -444,6 +444,10 @@ pub(crate) mod tests {
             unimplemented!();
         }
 
+        fn crc32(&self) -> u32 {
+            unimplemented!();
+        }
+
         fn as_any(&self) -> &dyn Any {
             self
         }

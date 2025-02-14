@@ -28,6 +28,7 @@ pub struct MockChunkInfo {
     c_compr_size: u32,
     c_decompress_size: u32,
     c_flags: BlobChunkFlags,
+    crc32: u32,
 }
 
 impl MockChunkInfo {
@@ -72,6 +73,14 @@ impl BlobChunkInfo for MockChunkInfo {
 
     fn has_crc(&self) -> bool {
         self.c_flags.contains(BlobChunkFlags::HAS_CRC)
+    }
+
+    fn crc32(&self) -> u32 {
+        if self.has_crc() {
+            self.crc32
+        } else {
+            0
+        }
     }
 
     fn as_any(&self) -> &dyn Any {

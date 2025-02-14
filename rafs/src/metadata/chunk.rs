@@ -418,7 +418,7 @@ fn to_rafs_v5_chunk_info(cki: &dyn BlobV5ChunkInfo) -> RafsV5ChunkInfo {
         uncompressed_offset: cki.uncompressed_offset(),
         file_offset: cki.file_offset(),
         index: cki.index(),
-        reserved: 0u32,
+        crc32: cki.crc32(),
     }
 }
 

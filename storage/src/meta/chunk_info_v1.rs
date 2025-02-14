@@ -92,6 +92,10 @@ impl BlobMetaChunkInfo for BlobChunkInfoV1Ondisk {
         false
     }
 
+    fn crc32(&self) -> u32 {
+        0
+    }
+
     fn is_compressed(&self) -> bool {
         self.compressed_size() != self.uncompressed_size()
     }
