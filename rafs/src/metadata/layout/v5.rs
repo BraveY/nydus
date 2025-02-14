@@ -1114,8 +1114,8 @@ pub struct RafsV5ChunkInfo {
     pub file_offset: u64, // 72
     /// chunk index, it's allocated sequentially and starting from 0 for one blob.
     pub index: u32,
-    /// reserved
-    pub reserved: u32, //80
+    /// crc32 of the chunk
+    pub crc32: u32, //80
 }
 
 impl RafsV5ChunkInfo {
@@ -1143,7 +1143,7 @@ impl Display for RafsV5ChunkInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(
             f,
-            "file_offset {}, compress_offset {}, compress_size {}, uncompress_offset {}, uncompress_size {}, blob_index {}, block_id {}, index {}, is_compressed {}",
+            "file_offset {}, compress_offset {}, compress_size {}, uncompress_offset {}, uncompress_size {}, blob_index {}, block_id {}, index {}, is_compressed {}, crc32 {}",
             self.file_offset,
             self.compressed_offset,
             self.compressed_size,
@@ -1153,6 +1153,7 @@ impl Display for RafsV5ChunkInfo {
             self.block_id,
             self.index,
             self.flags.contains(BlobChunkFlags::COMPRESSED),
+            self.crc32,
         )
     }
 }
@@ -1335,6 +1336,7 @@ fn add_chunk_to_bio_desc(
         compressed_size: chunk.compressed_size(),
         uncompressed_size: chunk.uncompressed_size(),
         flags: chunk.flags(),
+        crc32: chunk.crc32(),
     }) as Arc<dyn BlobChunkInfo>;
     let bio = BlobIoDesc::new(
         blob,
@@ -1610,8 +1612,7 @@ pub mod tests {
         pub uncompress_offset: u64,
         pub file_offset: u64,
         pub index: u32,
-        #[allow(unused)]
-        pub reserved: u32,
+        pub crc32: u32,
     }
 
     impl MockChunkInfo {
@@ -1643,6 +1644,14 @@ pub mod tests {
 
         fn has_crc(&self) -> bool {
             self.flags.contains(BlobChunkFlags::HAS_CRC)
+        }
+
+        fn crc32(&self) -> u32 {
+            if self.has_crc() {
+                self.crc32
+            } else {
+                0
+            }
         }
 
         fn as_any(&self) -> &dyn Any {

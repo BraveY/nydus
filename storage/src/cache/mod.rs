@@ -24,7 +24,7 @@ use std::time::Instant;
 use fuse_backend_rs::file_buf::FileVolatileSlice;
 use nydus_utils::compress::zlib_random::ZranDecoder;
 use nydus_utils::crypt::{self, Cipher, CipherContext};
-use nydus_utils::{compress, digest};
+use nydus_utils::{compress, crc, digest};
 
 use crate::backend::{BlobBackend, BlobReader};
 use crate::cache::state::ChunkMap;
@@ -163,6 +163,9 @@ pub trait BlobCache: Send + Sync {
 
     /// Get message digest algorithm to handle chunks in the blob.
     fn blob_digester(&self) -> digest::Algorithm;
+
+    /// Get crc32 algorithm to handle chunks in the blob.
+    fn blob_crc_checker(&self) -> crc::Algorithm;
 
     /// Check whether the cache object is for an stargz image with legacy chunk format.
     fn is_legacy_stargz(&self) -> bool;
@@ -693,7 +696,7 @@ mod tests {
             uncompress_offset: 0,
             file_offset: 0,
             index: 0,
-            reserved: 0,
+            crc32: 0,
         }) as Arc<dyn BlobChunkInfo>;
         let chunk2 = Arc::new(MockChunkInfo {
             block_id: Default::default(),
@@ -705,7 +708,7 @@ mod tests {
             uncompress_offset: 0x1000,
             file_offset: 0x1000,
             index: 1,
-            reserved: 0,
+            crc32: 0,
         }) as Arc<dyn BlobChunkInfo>;
         let chunk3 = Arc::new(MockChunkInfo {
             block_id: Default::default(),
@@ -717,7 +720,7 @@ mod tests {
             uncompress_offset: 0x1000,
             file_offset: 0x1000,
             index: 1,
-            reserved: 0,
+            crc32: 0,
         }) as Arc<dyn BlobChunkInfo>;
 
         let cb = |_merged| {};

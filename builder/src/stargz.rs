@@ -456,7 +456,7 @@ impl StargzBuilder {
                     uncompressed_offset: self.uncompressed_offset,
                     file_offset: entry.chunk_offset as u64,
                     index: 0,
-                    reserved: 0,
+                    crc32: 0,
                 });
                 let chunk = NodeChunk {
                     source: ChunkSource::Build,

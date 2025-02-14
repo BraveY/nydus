@@ -175,6 +175,10 @@ impl BlobMetaChunkInfo for BlobChunkInfoV2Ondisk {
         u64::from_le(self.uncomp_info) & CHUNK_V2_FLAG_HAS_CRC != 0
     }
 
+    fn crc32(&self) -> u32 {
+        0
+    }
+
     fn is_zran(&self) -> bool {
         u64::from_le(self.uncomp_info) & CHUNK_V2_FLAG_ZRAN != 0
     }

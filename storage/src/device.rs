@@ -38,6 +38,7 @@ use fuse_backend_rs::file_traits::FileReadWriteVolatile;
 
 use nydus_api::ConfigV2;
 use nydus_utils::compress;
+use nydus_utils::crc::{self};
 use nydus_utils::crypt::{self, Cipher, CipherContext};
 use nydus_utils::digest::{self, RafsDigest};
 
@@ -140,6 +141,8 @@ pub struct BlobInfo {
     cipher: crypt::Algorithm,
     /// Message digest algorithm to process the blob.
     digester: digest::Algorithm,
+    /// CRC checker to process the chunk.
+    crc_checker: crc::Algorithm,
     /// Starting offset of the data to prefetch.
     prefetch_offset: u32,
     /// Size of blob data to prefetch.
@@ -205,6 +208,7 @@ impl BlobInfo {
             compressor: compress::Algorithm::None,
             cipher: crypt::Algorithm::None,
             digester: digest::Algorithm::Blake3,
+            crc_checker: crc::Algorithm::Crc32Iscsi,
             prefetch_offset: 0,
             prefetch_size: 0,
             is_legacy_stargz: false,
@@ -393,6 +397,10 @@ impl BlobInfo {
         self.cipher_ctx = cipher_ctx;
     }
 
+    /// Get the crc algorithm for the blob.
+    pub fn crc_checker(&self) -> crc::Algorithm {
+        self.crc_checker
+    }
     /// Get the message digest algorithm for the blob.
     pub fn digester(&self) -> digest::Algorithm {
         self.digester
@@ -709,8 +717,11 @@ pub trait BlobChunkInfo: Any + Sync + Send {
     /// Check whether the chunk is encrypted or not.
     fn is_encrypted(&self) -> bool;
 
-    // Check whether the chunk has CRC checksum or not.
+    /// Check whether the chunk has CRC checksum or not.
     fn has_crc(&self) -> bool;
+
+    /// Get the crc32 checksum of the chunk.
+    fn crc32(&self) -> u32;
 
     fn as_any(&self) -> &dyn Any;
 }
@@ -771,6 +782,10 @@ impl BlobChunkInfo for BlobIoChunk {
 
     fn has_crc(&self) -> bool {
         self.0.has_crc()
+    }
+
+    fn crc32(&self) -> u32 {
+        self.0.crc32()
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -1494,7 +1509,7 @@ mod tests {
             uncompress_offset: 0x2000,
             file_offset: 0,
             index: 3,
-            reserved: 0,
+            crc32: 0,
         });
         let iochunk: BlobIoChunk = chunk.clone().into();
 
@@ -1527,7 +1542,7 @@ mod tests {
             uncompress_offset: 0,
             file_offset: 0,
             index: 0,
-            reserved: 0,
+            crc32: 0,
         }) as Arc<dyn BlobChunkInfo>;
         let chunk2 = Arc::new(MockChunkInfo {
             block_id: Default::default(),
@@ -1539,7 +1554,7 @@ mod tests {
             uncompress_offset: 0x1000,
             file_offset: 0x1000,
             index: 1,
-            reserved: 0,
+            crc32: 0,
         }) as Arc<dyn BlobChunkInfo>;
         let chunk3 = Arc::new(MockChunkInfo {
             block_id: Default::default(),
@@ -1551,7 +1566,7 @@ mod tests {
             uncompress_offset: 0x3000,
             file_offset: 0x3000,
             index: 1,
-            reserved: 0,
+            crc32: 0,
         }) as Arc<dyn BlobChunkInfo>;
 
         let desc1 = BlobIoDesc {
@@ -1613,7 +1628,7 @@ mod tests {
             uncompress_offset: 0,
             file_offset: 0,
             index: 0,
-            reserved: 0,
+            crc32: 0,
         }) as Arc<dyn BlobChunkInfo>;
         let mut iovec = BlobIoVec::new(blob1.clone());
         iovec.push(BlobIoDesc::new(blob1, BlobIoChunk(chunk1), 0, 0x1000, true));
@@ -1637,7 +1652,7 @@ mod tests {
             uncompress_offset: 0x1000,
             file_offset: 0x1000,
             index: 1,
-            reserved: 0,
+            crc32: 0,
         }) as Arc<dyn BlobChunkInfo>;
         let mut iovec2 = BlobIoVec::new(blob2.clone());
         iovec2.push(BlobIoDesc::new(blob2, BlobIoChunk(chunk2), 0, 0x1000, true));
@@ -1676,7 +1691,7 @@ mod tests {
                 uncompress_offset: 2 * chunk_idx as u64 * chunk_size as u64,
                 file_offset: 2 * chunk_idx as u64 * chunk_size as u64,
                 index: chunk_idx as u32,
-                reserved: 0,
+                crc32: 0,
             }) as Arc<dyn BlobChunkInfo>;
             let desc = BlobIoDesc::new(large_blob.clone(), BlobIoChunk(chunk), 0, chunk_size, true);
             if chunk_idx < chunk_count / 2 {

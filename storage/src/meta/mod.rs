@@ -1398,6 +1398,13 @@ impl BlobMetaChunkArray {
         }
     }
 
+    fn crc32(&self, index: usize) -> u32 {
+        match self {
+            BlobMetaChunkArray::V1(v) => v[index].crc32(),
+            BlobMetaChunkArray::V2(v) => v[index].crc32(),
+        }
+    }
+
     fn _get_chunk_index_nocheck<T: BlobMetaChunkInfo>(
         state: &BlobCompressionContext,
         chunks: &[T],
@@ -1900,6 +1907,10 @@ impl BlobChunkInfo for BlobMetaChunk {
         self.meta.chunk_info_array.has_crc(self.chunk_index)
     }
 
+    fn crc32(&self) -> u32 {
+        self.meta.chunk_info_array.crc32(self.chunk_index)
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -1974,6 +1985,9 @@ pub trait BlobMetaChunkInfo {
 
     /// Check whether chunk data has CRC or not.
     fn has_crc(&self) -> bool;
+
+    /// Get CRC32 of the chunk.
+    fn crc32(&self) -> u32;
 
     /// Check whether the blob chunk is compressed or not.
     ///

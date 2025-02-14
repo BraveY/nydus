@@ -1468,6 +1468,9 @@ impl BlobChunkInfo for DirectChunkInfoV6 {
             .contains(BlobChunkFlags::HAS_CRC)
     }
 
+    fn crc32(&self) -> u32 {
+        0
+    }
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -1561,6 +1564,10 @@ impl BlobChunkInfo for TarfsChunkInfoV6 {
 
     fn has_crc(&self) -> bool {
         false
+    }
+
+    fn crc32(&self) -> u32 {
+        0
     }
 
     fn as_any(&self) -> &dyn Any {
