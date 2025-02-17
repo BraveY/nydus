@@ -32,7 +32,7 @@ use crate::device::{
     BlobChunkInfo, BlobInfo, BlobIoDesc, BlobIoRange, BlobIoVec, BlobObject, BlobPrefetchRequest,
 };
 use crate::meta::BlobCompressionContextInfo;
-use crate::utils::{alloc_buf, check_digest};
+use crate::utils::{alloc_buf, check_crc, check_hash};
 use crate::{StorageResult, RAFS_MAX_CHUNK_SIZE};
 
 mod cachedfile;
@@ -387,9 +387,9 @@ pub trait BlobCache: Send + Sync {
         let d_size = chunk.uncompressed_size() as usize;
         if buffer.len() != d_size {
             Err(eio!("uncompressed size and buffer size doesn't match"))
-        } else if (self.need_validation() || force_validation)
+        } else if (self.need_validation() || chunk.has_crc() || force_validation)
             && !self.is_legacy_stargz()
-            && !check_digest(buffer, chunk.chunk_id(), self.blob_digester())
+            && !self.check_digest(chunk, buffer)
         {
             Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
@@ -397,6 +397,14 @@ pub trait BlobCache: Send + Sync {
             ))
         } else {
             Ok(d_size)
+        }
+    }
+
+    fn check_digest(&self, chunk: &dyn BlobChunkInfo, buffer: &[u8]) -> bool {
+        if chunk.has_crc() {
+            check_crc(buffer, chunk.crc32(), self.blob_crc_checker())
+        } else {
+            check_hash(buffer, chunk.chunk_id(), self.blob_digester())
         }
     }
 

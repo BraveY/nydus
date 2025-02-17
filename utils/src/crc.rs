@@ -26,14 +26,17 @@ pub struct Crc32 {
 
 impl Default for Crc32 {
     fn default() -> Self {
-        Self::new()
+        Self::new(Algorithm::Crc32Iscsi)
     }
 }
 
 impl Crc32 {
-    pub fn new() -> Self {
+    pub fn new(algorithm: Algorithm) -> Self {
+        let crc = match algorithm {
+            Algorithm::Crc32Iscsi => &crc::CRC_32_ISCSI,
+        };
         Self {
-            crc: Crc::<u32, Table<16>>::new(&crc::CRC_32_ISCSI),
+            crc: Crc::<u32, Table<16>>::new(crc),
         }
     }
 
