@@ -620,6 +620,7 @@ impl BlobCompactor {
             false,
             Features::new(),
             false,
+            false,
         );
         let mut bootstrap_mgr =
             BootstrapManager::new(Some(ArtifactStorage::SingleFile(d_bootstrap)), None);
@@ -1152,6 +1153,7 @@ mod tests {
             false,
             Features::new(),
             false,
+            false,
         );
 
         let mut compactor = blob_compactor_load_and_dedup_chunks().unwrap();
@@ -1248,6 +1250,7 @@ mod tests {
             None,
             false,
             Features::new(),
+            false,
             false,
         );
         let mut blob_ctx1 = BlobContext::new(

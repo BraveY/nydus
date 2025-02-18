@@ -340,6 +340,15 @@ impl BlobCompressionContextHeader {
         }
     }
 
+    /// Set flag indicating whether the blob's chunk has crc checksum.
+    pub fn set_has_crc(&mut self, enable: bool) {
+        if enable {
+            self.s_features |= BlobFeatures::HAS_CRC.bits();
+        } else {
+            self.s_features &= !BlobFeatures::HAS_CRC.bits();
+        }
+    }
+
     /// Get blob meta feature flags.
     pub fn features(&self) -> u32 {
         self.s_features
@@ -1192,6 +1201,7 @@ impl BlobMetaChunkArray {
         uncompressed_size: u32,
         compressed: bool,
         encrypted: bool,
+        has_crc: bool,
         is_batch: bool,
         data: u64,
     ) {
@@ -1204,6 +1214,7 @@ impl BlobMetaChunkArray {
                 meta.set_uncompressed_size(uncompressed_size);
                 meta.set_compressed(compressed);
                 meta.set_encrypted(encrypted);
+                meta.set_has_crc(has_crc);
                 meta.set_batch(is_batch);
                 meta.set_data(data);
                 v.push(meta);
@@ -1986,9 +1997,6 @@ pub trait BlobMetaChunkInfo {
     /// Check whether chunk data has CRC or not.
     fn has_crc(&self) -> bool;
 
-    /// Get CRC32 of the chunk.
-    fn crc32(&self) -> u32;
-
     /// Check whether the blob chunk is compressed or not.
     ///
     /// Assume the image builder guarantee that compress_size < uncompress_size if the chunk is
@@ -2012,6 +2020,9 @@ pub trait BlobMetaChunkInfo {
 
     /// Get offset of uncompressed chunk data inside the batch chunk.
     fn get_uncompressed_offset_in_batch_buf(&self) -> Result<u32>;
+
+    /// Get CRC32 of the chunk.
+    fn crc32(&self) -> u32;
 
     /// Get data associated with the entry. V2 only, V1 just returns zero.
     fn get_data(&self) -> u64;
@@ -2055,6 +2066,9 @@ pub fn format_blob_features(features: BlobFeatures) -> String {
     }
     if features.contains(BlobFeatures::ENCRYPTED) {
         output += "encrypted ";
+    }
+    if features.contains(BlobFeatures::HAS_CRC) {
+        output += "crc-checksumed ";
     }
     if features.contains(BlobFeatures::IS_CHUNKDICT_GENERATED) {
         output += "is-chunkdict-generated ";

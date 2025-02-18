@@ -69,6 +69,8 @@ bitflags! {
         const BATCH = 0x0000_0080;
         /// Whether the Blob is encrypted.
         const ENCRYPTED = 0x0000_0100;
+        /// Whether the Chunk has CRC checksum.
+        const HAS_CRC = 0x0000_0200;
         /// Blob has TAR headers to separate contents.
         const HAS_TAR_HEADER = 0x1000_0000;
         /// Blob has Table of Content (ToC) at the tail.
@@ -397,10 +399,6 @@ impl BlobInfo {
         self.cipher_ctx = cipher_ctx;
     }
 
-    /// Get the crc algorithm for the blob.
-    pub fn crc_checker(&self) -> crc::Algorithm {
-        self.crc_checker
-    }
     /// Get the message digest algorithm for the blob.
     pub fn digester(&self) -> digest::Algorithm {
         self.digester
@@ -409,6 +407,14 @@ impl BlobInfo {
     /// Set compression algorithm for the blob.
     pub fn set_digester(&mut self, digester: digest::Algorithm) {
         self.digester = digester;
+    }
+    /// Get the crc algorithm for the blob.
+    pub fn crc_checker(&self) -> crc::Algorithm {
+        self.crc_checker
+    }
+    /// Set CRC algorithm for the blob.
+    pub fn set_crc_checker(&mut self, crc_checker: crc::Algorithm) {
+        self.crc_checker = crc_checker;
     }
 
     /// Get blob data prefetching offset.
