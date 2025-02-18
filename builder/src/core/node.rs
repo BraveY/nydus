@@ -25,7 +25,7 @@ use nydus_rafs::metadata::{Inode, RafsVersion};
 use nydus_storage::device::BlobFeatures;
 use nydus_storage::meta::{BlobChunkInfoV2Ondisk, BlobMetaChunkInfo};
 use nydus_utils::digest::{DigestHasher, RafsDigest};
-use nydus_utils::{compress, crypt};
+use nydus_utils::{compress, crc, crypt};
 use nydus_utils::{div_round_up, event_tracer, root_tracer, try_round_up_4k, ByteSize};
 use parse_size::parse_size;
 use sha2::digest::Digest;
@@ -469,6 +469,10 @@ impl Node {
         // For tar-tarfs case, no need to compute chunk id.
         if ctx.conversion_type != ConversionType::TarToTarfs && !external {
             chunk.set_id(RafsDigest::from_buf(buf, ctx.digester));
+            if ctx.crc_checker != crc::Algorithm::None {
+                chunk.set_has_crc(true);
+                chunk.set_crc32(crc::Crc32::new(ctx.crc_checker).checksum(buf));
+            }
         }
 
         if ctx.cipher != crypt::Algorithm::None && !external {
@@ -506,6 +510,7 @@ impl Node {
 
         let mut chunk_info = None;
         let encrypted = blob_ctx.blob_cipher != crypt::Algorithm::None;
+        let crc_enalbe = blob_ctx.blob_crc_checker != crc::Algorithm::None;
         let mut dumped_size = None;
 
         if ctx.blob_batch_generator.is_some()
@@ -522,6 +527,7 @@ impl Node {
                     pre_d_offset,
                     d_size,
                     encrypted,
+                    crc_enalbe,
                 )?);
                 batch.append_chunk_data_buf(chunk_data);
             } else {
@@ -541,6 +547,7 @@ impl Node {
                     pre_d_offset,
                     d_size,
                     encrypted,
+                    crc_enalbe,
                 )?);
                 batch.append_chunk_data_buf(chunk_data);
             }

@@ -43,6 +43,7 @@ use std::ops::Deref;
 use std::os::unix::ffi::OsStrExt;
 use std::sync::Arc;
 
+use nydus_utils::crc;
 use nydus_utils::digest::{self, DigestHasher, RafsDigest};
 use nydus_utils::{compress, ByteSize};
 #[allow(unused_imports)]
@@ -238,6 +239,15 @@ impl RafsV5SuperBlock {
 
         self.s_flags &= !RafsSuperFlags::HASH_BLAKE3.bits();
         self.s_flags &= !RafsSuperFlags::HASH_SHA256.bits();
+        self.s_flags |= c.bits();
+    }
+
+    /// Set CRC algorithm to handle chunk of the Rafs filesystem.
+    pub fn set_crc_checker(&mut self, crc_checker: crc::Algorithm) {
+        let c: RafsSuperFlags = crc_checker.into();
+
+        self.s_flags &= !RafsSuperFlags::CRC_NONE.bits();
+        self.s_flags &= !RafsSuperFlags::HAS_CRC.bits();
         self.s_flags |= c.bits();
     }
 
@@ -579,6 +589,7 @@ impl RafsV5BlobTable {
 
         blob_info.set_compressor(flags.into());
         blob_info.set_digester(flags.into());
+        blob_info.set_crc_checker(flags.into());
         blob_info.set_prefetch_info(prefetch_offset as u64, prefetch_size as u64);
         if is_chunkdict {
             blob_info.set_chunkdict_generated(true);

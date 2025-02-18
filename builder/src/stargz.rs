@@ -940,6 +940,7 @@ mod tests {
             Features::new(),
             false,
             Attributes::default(),
+            false,
         );
         ctx.fs_version = RafsVersion::V6;
         ctx.conversion_type = ConversionType::EStargzToRafs;
