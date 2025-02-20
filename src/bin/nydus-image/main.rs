@@ -1279,10 +1279,6 @@ impl Command {
                     build_ctx.blob_features.insert(BlobFeatures::CHUNK_INFO_V2);
                     build_ctx.blob_features.insert(BlobFeatures::ENCRYPTED);
                 }
-                if crc_enable {
-                    build_ctx.blob_features.insert(BlobFeatures::CHUNK_INFO_V2);
-                    build_ctx.blob_features.insert(BlobFeatures::HAS_CRC);
-                }
                 Box::new(DirectoryBuilder::new())
             }
             ConversionType::EStargzIndexToRef => {
