@@ -763,11 +763,13 @@ impl BlobChunkInfo for CachedChunkInfoV5 {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("cached chunk info v5 has crc");
         self.flags.contains(BlobChunkFlags::HAS_CRC)
     }
 
     fn crc32(&self) -> u32 {
         if self.has_crc() {
+            trace!("crc32 for CachedChunkInfoV5");
             self.crc32
         } else {
             0

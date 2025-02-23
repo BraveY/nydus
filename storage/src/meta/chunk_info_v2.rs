@@ -171,6 +171,7 @@ impl BlobMetaChunkInfo for BlobChunkInfoV2Ondisk {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("blob chunk info v2 on disk chunk has crc");
         u64::from_le(self.uncomp_info) & CHUNK_V2_FLAG_HAS_CRC != 0
     }
 
@@ -213,6 +214,7 @@ impl BlobMetaChunkInfo for BlobChunkInfoV2Ondisk {
     }
 
     fn crc32(&self) -> u32 {
+        trace!("crc32 for BlobChunkInfoV2Ondisk");
         u64::from_le(self.data) as u32
     }
 

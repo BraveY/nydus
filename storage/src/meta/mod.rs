@@ -1906,10 +1906,12 @@ impl BlobChunkInfo for BlobMetaChunk {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("BlobMetaChunk::has_crc()");
         self.meta.chunk_info_array.has_crc(self.chunk_index)
     }
 
     fn crc32(&self) -> u32 {
+        trace!("crc32 for BlobMetaChunk");
         self.meta.chunk_info_array.crc32(self.chunk_index)
     }
 

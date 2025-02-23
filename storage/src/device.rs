@@ -785,10 +785,12 @@ impl BlobChunkInfo for BlobIoChunk {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("BlobIoChunk::has_crc");
         self.0.has_crc()
     }
 
     fn crc32(&self) -> u32 {
+        trace!("crc32 for BlobIoChunk");
         self.0.crc32()
     }
 

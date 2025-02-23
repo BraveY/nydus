@@ -89,6 +89,7 @@ impl BlobMetaChunkInfo for BlobChunkInfoV1Ondisk {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("blob chunk info v1 on disk chunk has crc");
         false
     }
 
@@ -121,6 +122,7 @@ impl BlobMetaChunkInfo for BlobChunkInfoV1Ondisk {
     }
 
     fn crc32(&self) -> u32 {
+        trace!("crc32 for BlobChunkInfoV1Ondisk");
         0
     }
 

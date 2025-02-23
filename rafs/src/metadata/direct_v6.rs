@@ -1462,6 +1462,7 @@ impl BlobChunkInfo for DirectChunkInfoV6 {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("DirectChunkInfoV6::has_crc()");
         let state = self.state();
         self.v5_chunk(&state)
             .flags
@@ -1469,6 +1470,7 @@ impl BlobChunkInfo for DirectChunkInfoV6 {
     }
 
     fn crc32(&self) -> u32 {
+        trace!("crc32 for DirectChunkInfoV6");
         0
     }
     fn as_any(&self) -> &dyn Any {
@@ -1563,10 +1565,12 @@ impl BlobChunkInfo for TarfsChunkInfoV6 {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("TarfsChunkInfoV6::has_crc()");
         false
     }
 
     fn crc32(&self) -> u32 {
+        trace!("crc32 TarfsChunkInfoV6");
         0
     }
 

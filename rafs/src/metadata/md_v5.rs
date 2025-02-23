@@ -251,11 +251,13 @@ impl BlobChunkInfo for V5IoChunk {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("V5IoChunk::crc32");
         self.flags.contains(BlobChunkFlags::HAS_CRC)
     }
 
     fn crc32(&self) -> u32 {
         if self.has_crc() {
+            trace!("crc32 for V5IoChunk");
             self.crc32
         } else {
             0

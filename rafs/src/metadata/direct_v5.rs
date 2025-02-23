@@ -855,6 +855,7 @@ impl BlobChunkInfo for DirectChunkInfoV5 {
     }
 
     fn has_crc(&self) -> bool {
+        trace!("DirectChunkInfoV5::has_crc()");
         self.chunk(self.state().deref())
             .flags
             .contains(BlobChunkFlags::HAS_CRC)
@@ -862,6 +863,7 @@ impl BlobChunkInfo for DirectChunkInfoV5 {
 
     fn crc32(&self) -> u32 {
         if self.has_crc() {
+            trace!("crc32 for DirectChunkInfoV5");
             self.chunk(self.state().deref()).crc32
         } else {
             0

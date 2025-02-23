@@ -774,6 +774,7 @@ impl BlobContext {
             assert_eq!(chunk.index() as usize, self.blob_meta_info.len());
             match &self.blob_meta_info {
                 BlobMetaChunkArray::V1(_) => {
+                    trace!("blob meta info is V1");
                     self.blob_meta_info.add_v1(
                         chunk.compressed_offset(),
                         chunk.compressed_size(),
@@ -783,10 +784,15 @@ impl BlobContext {
                     self.blob_chunk_digest.push(chunk.id().data);
                 }
                 BlobMetaChunkArray::V2(_) => {
+                    trace!("blob meta info is V2");
                     if let Some(mut info) = chunk_info {
                         info.set_uncompressed_offset(chunk.uncompressed_offset());
                         self.blob_meta_info.add_v2_info(info);
                     } else {
+                        let mut data: u64 = 0;
+                        if chunk.has_crc() {
+                            data = chunk.crc32() as u64;
+                        }
                         self.blob_meta_info.add_v2(
                             chunk.compressed_offset(),
                             chunk.compressed_size(),
@@ -796,7 +802,7 @@ impl BlobContext {
                             chunk.is_encrypted(),
                             chunk.has_crc(),
                             chunk.is_batch(),
-                            0,
+                            data,
                         );
                     }
                     self.blob_chunk_digest.push(chunk.id().data);

@@ -345,7 +345,6 @@ pub trait BlobCache: Send + Sync {
                 warn!("failed to read data from backend, {}", e);
                 e
             })?;
-
         Ok(c_buf)
     }
 
@@ -385,6 +384,14 @@ pub trait BlobCache: Send + Sync {
         force_validation: bool,
     ) -> Result<usize> {
         let d_size = chunk.uncompressed_size() as usize;
+        trace!(
+            "need_validation: {} has_crc: {} force_validation: {} legacy_stargz: {}, check digest: {}",
+            self.need_validation(),
+            chunk.has_crc(),
+            force_validation,
+            self.is_legacy_stargz(),
+            self.check_digest(chunk, buffer)
+        );
         if buffer.len() != d_size {
             Err(eio!("uncompressed size and buffer size doesn't match"))
         } else if (self.need_validation() || chunk.has_crc() || force_validation)
@@ -402,6 +409,11 @@ pub trait BlobCache: Send + Sync {
 
     fn check_digest(&self, chunk: &dyn BlobChunkInfo, buffer: &[u8]) -> bool {
         if chunk.has_crc() {
+            trace!(
+                "chunk {} crc {} check pass",
+                chunk.chunk_id(),
+                chunk.crc32()
+            );
             check_crc(buffer, chunk.crc32(), self.blob_crc_checker())
         } else {
             check_hash(buffer, chunk.chunk_id(), self.blob_digester())
