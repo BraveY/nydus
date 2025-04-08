@@ -38,6 +38,10 @@ type RemoteHandler struct {
 	blobs []backend.Blob
 }
 
+const (
+	crcsKey = "org.opencontainers.image.crcs"
+)
+
 func NewRemoteHandler(ctx context.Context, imageRef string, plainHTTP bool) (*RemoteHandler, error) {
 	remoter, err := pkgPvd.DefaultRemote(imageRef, true)
 	if err != nil {
@@ -154,6 +158,11 @@ func (handler *RemoteHandler) handle(ctx context.Context, layer ocispec.Descript
 		return nil, errors.Wrap(err, "read tar blob failed")
 	}
 
+	crcs := ""
+	if c, ok := layer.Annotations[crcsKey]; ok {
+		crcs = c
+	}
+
 	blobInfo := handler.blobs[index].Config
 	fileAttrs := make([]backend.FileAttribute, len(files))
 	hackFile := os.Getenv("HACK_FILE")
@@ -161,6 +170,8 @@ func (handler *RemoteHandler) handle(ctx context.Context, layer ocispec.Descript
 		if hackFile != "" && f.name == hackFile {
 			hackFileWrapper(&f)
 		}
+
+		// TODO: support seting crcs when multiple files in one tar.
 		fileAttrs[idx] = backend.FileAttribute{
 			BlobID:                 blobInfo.Digest,
 			BlobIndex:              uint32(index),
@@ -171,6 +182,7 @@ func (handler *RemoteHandler) handle(ctx context.Context, layer ocispec.Descript
 			RelativePath:           f.name,
 			Type:                   "external",
 			Mode:                   f.mode,
+			Crcs:                   crcs,
 		}
 	}
 	return fileAttrs, nil
