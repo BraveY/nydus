@@ -160,6 +160,7 @@ impl DirectoryBuilder {
         blob_writer: &mut Box<dyn Artifact>,
         tree: Tree,
     ) -> Result<BuildOutput> {
+        println!("one build");
         // Build bootstrap
         let mut bootstrap_ctx = bootstrap_mgr.create_ctx()?;
         let mut bootstrap = timing_tracer!(
@@ -239,6 +240,10 @@ impl Builder for DirectoryBuilder {
         let mut output = self.one_build(ctx, bootstrap_mgr, blob_mgr, &mut blob_writer, tree)?;
 
         // Build for external tree
+        println!(
+            "build for external tree, ctx crc checker is {:?}, conversion type is {:?}",
+            ctx.crc_checker, ctx.conversion_type,
+        );
         ctx.prefetch = prefetch::Prefetch::new(prefetch::PrefetchPolicy::None)?;
         let mut external_blob_mgr = BlobManager::new(ctx.digester, true);
         let mut external_bootstrap_mgr = bootstrap_mgr.clone();

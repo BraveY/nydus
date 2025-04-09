@@ -46,8 +46,7 @@ impl Debug for ChunkWrapper {
 
 impl Display for ChunkWrapper {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
+        let base_format = format!(
             "id {}, index {}, blob_index {}, file_offset {}, compressed {}/{}, uncompressed {}/{}",
             self.id(),
             self.index(),
@@ -57,7 +56,14 @@ impl Display for ChunkWrapper {
             self.compressed_size(),
             self.uncompressed_offset(),
             self.uncompressed_size(),
-        )
+        );
+
+        let full_format = if self.has_crc() {
+            format!("{}, crc32 {:#x}", base_format, self.crc32())
+        } else {
+            base_format
+        };
+        write!(f, "{}", full_format)
     }
 }
 
@@ -681,5 +687,14 @@ mod tests {
         let wrapper_ref = ChunkWrapper::Ref(Arc::new(MockChunkInfo::default()));
         let wrapper_v5 = ChunkWrapper::Ref(Arc::new(CachedChunkInfoV5::default()));
         test_copy_from(wrapper_v5, wrapper_ref);
+    }
+
+    #[test]
+    fn test_fmt() {
+        let wrapper_v5 = ChunkWrapper::Ref(Arc::new(CachedChunkInfoV5::default()));
+        assert_eq!(
+            format!("{:?}", wrapper_v5),
+            "RafsV5ChunkInfo { block_id: RafsDigest { data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }, blob_index: 0, flags: (empty), compressed_size: 0, uncompressed_size: 0, compressed_offset: 0, uncompressed_offset: 0, file_offset: 0, index: 0, crc32: 0 }"
+        );
     }
 }

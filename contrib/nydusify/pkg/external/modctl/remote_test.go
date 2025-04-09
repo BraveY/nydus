@@ -96,7 +96,8 @@ func TestRemoteHandler_Handle(t *testing.T) {
 	}
 
 	annotations := map[string]string{
-		crcsKey: "0x1234,0x5678",
+		filePathKey: "file1.txt",
+		crcsKey:     "0x1234,0x5678",
 	}
 	handler := &RemoteHandler{
 		ctx:      context.Background(),
@@ -127,6 +128,7 @@ func TestRemoteHandler_Handle(t *testing.T) {
 	assert.NotEmpty(t, fileAttrs)
 	assert.Equal(t, 3, len(fileAttrs))
 	assert.Equal(t, annotations[crcsKey], fileAttrs[0].Crcs)
+	assert.Equal(t, "", fileAttrs[1].Crcs)
 }
 
 func TestGetModelConfig(t *testing.T) {

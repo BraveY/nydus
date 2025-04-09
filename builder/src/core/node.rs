@@ -337,6 +337,10 @@ impl Node {
                 external_compressed_offset += compressed_size as u64;
                 external_blob_ctx.chunk_size = external_chunk_size as u32;
 
+                if ctx.crc_checker != crc::Algorithm::None {
+                    self.set_external_crc32(ctx, &mut chunk, i)?
+                }
+
                 if let Some(h) = inode_hasher.as_mut() {
                     h.digest_update(chunk.id().as_ref());
                 }
@@ -366,7 +370,7 @@ impl Node {
 
             let chunk_data = &mut data_buf[0..uncompressed_size as usize];
             let (mut chunk, mut chunk_info) =
-                self.read_file_chunk(ctx, reader, chunk_data, i, blob_mgr.external)?;
+                self.read_file_chunk(ctx, reader, chunk_data, blob_mgr.external)?;
             if let Some(h) = inode_hasher.as_mut() {
                 h.digest_update(chunk.id().as_ref());
             }
@@ -427,12 +431,33 @@ impl Node {
         Ok(blob_size)
     }
 
+    fn set_external_crc32(
+        &self,
+        ctx: &BuildContext,
+        chunk: &mut ChunkWrapper,
+        i: u32,
+    ) -> Result<()> {
+        println!("crc checker is enabled for external blob");
+        if let Some(crcs) = ctx.attributes.get_crcs(self.target()) {
+            println!("matched crcs for file {}", self.target().display());
+            if (i as usize) >= crcs.len() {
+                return Err(anyhow!(
+                    "invalid crc index {} for file {}",
+                    i,
+                    self.target().display()
+                ));
+            }
+            chunk.set_has_crc(true);
+            chunk.set_crc32(crcs[i as usize]);
+        }
+        Ok(())
+    }
+
     fn read_file_chunk<R: Read>(
         &self,
         ctx: &BuildContext,
         reader: &mut R,
         buf: &mut [u8],
-        index: u32,
         external: bool,
     ) -> Result<(ChunkWrapper, Option<BlobChunkInfoV2Ondisk>)> {
         let mut chunk = self.inode.create_chunk();
@@ -473,22 +498,6 @@ impl Node {
             if ctx.crc_checker != crc::Algorithm::None {
                 chunk.set_has_crc(true);
                 chunk.set_crc32(crc::Crc32::new(ctx.crc_checker).checksum(buf));
-            }
-        }
-
-        if ctx.crc_checker != crc::Algorithm::None && external {
-            println!("crc checker is enabled for external blob");
-            if let Some(crcs) = ctx.attributes.get_crcs(self.target()) {
-                println!("matched crcs for file {}", self.target().display());
-                if (index as usize) >= crcs.len() {
-                    return Err(anyhow!(
-                        "invalid crc index {} for file {}",
-                        index,
-                        self.target().display()
-                    ));
-                }
-                chunk.set_has_crc(true);
-                chunk.set_crc32(crcs[index as usize]);
             }
         }
 
@@ -1231,7 +1240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_read_file_chunk_crc_valid_index() {
+    fn test_set_external_crc32() {
         let mut ctx = BuildContext::default();
         ctx.crc_checker = crc::Algorithm::Crc32Iscsi;
         ctx.attributes = Attributes {
@@ -1253,49 +1262,17 @@ mod tests {
             1,
         );
 
-        let mut reader = std::io::Cursor::new(vec![0u8; 1024]);
-        let mut buf = [0u8; 1024];
-
+        let mut chunk = node.inode.create_chunk();
         print!("target: {}", node.target().display());
-        let result = node.read_file_chunk(&ctx, &mut reader, &mut buf, 1, true);
+        let result = node.set_external_crc32(&ctx, &mut chunk, 1);
         assert!(result.is_ok());
-        let (chunk, _) = result.unwrap();
         assert_eq!(chunk.crc32(), 0x87654321);
         assert!(chunk.has_crc());
 
         // test invalid crc index
-        let result = node.read_file_chunk(&ctx, &mut reader, &mut buf, 2, true);
+        let result = node.set_external_crc32(&ctx, &mut chunk, 2);
         assert!(result.is_err());
         let err = result.unwrap_err().to_string();
         assert!(err.contains("invalid crc index 2 for file /test_file"));
-    }
-
-    #[test]
-    fn test_read_file_chunk_crc_invalid_index() {
-        let mut ctx = BuildContext::default();
-        ctx.crc_checker = crc::Algorithm::Crc32Iscsi;
-        ctx.attributes = Attributes {
-            crcs: HashMap::new(),
-            ..Default::default()
-        };
-        let target = PathBuf::from("/test_file");
-        ctx.attributes.crcs.insert(target.clone(), vec![0x12345678]);
-
-        let node = Node::new(
-            InodeWrapper::new(RafsVersion::V5),
-            NodeInfo {
-                path: target.clone(),
-                ..Default::default()
-            },
-            1,
-        );
-
-        let mut reader = std::io::Cursor::new(vec![0u8; 1024]);
-        let mut buf = [0u8; 1024];
-
-        let result = node.read_file_chunk(&ctx, &mut reader, &mut buf, 1, true);
-        assert!(result.is_err());
-        let err = result.unwrap_err().to_string();
-        assert!(err.contains("invalid crc index 1 for file /test_file"));
     }
 }

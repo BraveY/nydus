@@ -51,17 +51,19 @@ impl Attributes {
                     let line = line?;
                     let name = line.name.as_str();
                     let state = line.state.as_bstr().unwrap_or_default();
+                    println!("name: {}, state: {}", name, state);
                     if name == KEY_TYPE {
                         _type = state.to_string();
                     }
                     if name == KEY_CRCS {
+                        println!("crcs: {:?}", state);
                         crc_arr = state
                             .to_string()
                             .split(',')
                             .map(|s| {
                                 let trimmed = s.trim();
-                                let hex_str = if trimmed.starts_with("0x") {
-                                    &trimmed[2..]
+                                let hex_str = if let Some(stripped) = trimmed.strip_prefix("0x") {
+                                    stripped
                                 } else {
                                     trimmed
                                 };

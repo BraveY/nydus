@@ -78,3 +78,34 @@ impl Crc32 {
         self.crc.checksum(bytes) == crc_result
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_crc32_checksum_correct() {
+        let crc32 = Crc32::new(Algorithm::Crc32Iscsi);
+        let data = b"123456789";
+        let expected_checksum = 0xe3069283;
+        let crc32_result = crc32.checksum(data);
+        println!("crc32 result: 0x{:x}", crc32_result);
+        assert_eq!(crc32_result, expected_checksum);
+    }
+
+    #[test]
+    fn test_crc32_checkcrc_match() {
+        let crc32 = Crc32::new(Algorithm::Crc32Iscsi);
+        let data = b"123456789";
+        let expected_checksum = 0xe3069283;
+        assert!(crc32.check_crc(data, expected_checksum));
+    }
+
+    #[test]
+    fn test_crc32_checkcrc_not_match() {
+        let crc32 = Crc32::new(Algorithm::Crc32Iscsi);
+        let data = b"123456789";
+        let wrong_checksum = 0x12345678;
+        assert!(!crc32.check_crc(data, wrong_checksum));
+    }
+}

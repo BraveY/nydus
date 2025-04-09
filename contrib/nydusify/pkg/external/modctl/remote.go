@@ -38,8 +38,18 @@ type RemoteHandler struct {
 	blobs []backend.Blob
 }
 
+type FileCrcList struct {
+	Files []FileCrcInfo `json:"files"`
+}
+
+type FileCrcInfo struct {
+	FilePath  string `json:"file_path"`
+	ChunkCrcs string `json:"chunk_crcs"`
+}
+
 const (
-	crcsKey = "org.opencontainers.image.crcs"
+	filePathKey = "org.cnai.model.filepath"
+	crcsKey     = "org.cnai.nydus.crcs"
 )
 
 func NewRemoteHandler(ctx context.Context, imageRef string, plainHTTP bool) (*RemoteHandler, error) {
@@ -158,9 +168,15 @@ func (handler *RemoteHandler) handle(ctx context.Context, layer ocispec.Descript
 		return nil, errors.Wrap(err, "read tar blob failed")
 	}
 
-	crcs := ""
+	var fileCrcList = FileCrcList{}
+	var fileCrcMap = make(map[string]string)
 	if c, ok := layer.Annotations[crcsKey]; ok {
-		crcs = c
+		if err := json.Unmarshal([]byte(c), &fileCrcList); err != nil {
+			return nil, errors.Wrap(err, "unmarshal crcs failed")
+		}
+		for _, f := range fileCrcList.Files {
+			fileCrcMap[f.FilePath] = f.ChunkCrcs
+		}
 	}
 
 	blobInfo := handler.blobs[index].Config
@@ -182,7 +198,9 @@ func (handler *RemoteHandler) handle(ctx context.Context, layer ocispec.Descript
 			RelativePath:           f.name,
 			Type:                   "external",
 			Mode:                   f.mode,
-			Crcs:                   crcs,
+		}
+		if crcs, ok := fileCrcMap[f.name]; ok {
+			fileAttrs[idx].Crcs = crcs
 		}
 	}
 	return fileAttrs, nil
