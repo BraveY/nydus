@@ -43,9 +43,8 @@ use std::ops::Deref;
 use std::os::unix::ffi::OsStrExt;
 use std::sync::Arc;
 
-use nydus_utils::crc;
 use nydus_utils::digest::{self, DigestHasher, RafsDigest};
-use nydus_utils::{compress, ByteSize};
+use nydus_utils::{compress, crc, ByteSize};
 #[allow(unused_imports)]
 use vm_memory::VolatileMemory;
 // With Rafs v5, the storage manager needs to access file system metadata to decompress the
@@ -245,7 +244,6 @@ impl RafsV5SuperBlock {
     /// Set CRC algorithm to handle chunk of the Rafs filesystem.
     pub fn set_crc_checker(&mut self, crc_checker: crc::Algorithm) {
         let c: RafsSuperFlags = crc_checker.into();
-
         self.s_flags &= !RafsSuperFlags::CRC_NONE.bits();
         self.s_flags &= !RafsSuperFlags::HAS_CRC.bits();
         self.s_flags |= c.bits();

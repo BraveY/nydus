@@ -6,6 +6,7 @@ use crc::Crc;
 use crc::Table;
 use std::fmt;
 use std::fmt::Debug;
+use std::io::Read;
 
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -70,12 +71,25 @@ impl Crc32 {
         }
     }
 
-    pub fn checksum(&self, bytes: &[u8]) -> u32 {
+    pub fn from_buf(&self, bytes: &[u8]) -> u32 {
         self.crc.checksum(bytes)
     }
 
-    pub fn check_crc(&self, bytes: &[u8], crc_result: u32) -> bool {
-        self.crc.checksum(bytes) == crc_result
+    // pub fn check_crc(&self, bytes: &[u8], crc_result: u32) -> bool {
+    //     self.crc.checksum(bytes) == crc_result
+    // }
+
+    /// Compute message crc32 by read data from the reader.
+    pub fn from_reader<R: Read>(&self, reader: &mut R) -> std::io::Result<u32> {
+        let mut digester = self.crc.digest();
+        let mut buf = vec![0u8; 1024 * 1024];
+        loop {
+            let sz = reader.read(&mut buf)?;
+            if sz == 0 {
+                return Ok(digester.finalize());
+            }
+            digester.update(&buf[0..sz]);
+        }
     }
 }
 
@@ -84,28 +98,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_crc32_checksum_correct() {
+    fn test_crc32_from_buf() {
         let crc32 = Crc32::new(Algorithm::Crc32Iscsi);
         let data = b"123456789";
         let expected_checksum = 0xe3069283;
-        let crc32_result = crc32.checksum(data);
-        println!("crc32 result: 0x{:x}", crc32_result);
+        let crc32_result = crc32.from_buf(data);
         assert_eq!(crc32_result, expected_checksum);
     }
 
     #[test]
-    fn test_crc32_checkcrc_match() {
+    fn test_crc32_from_reader() {
         let crc32 = Crc32::new(Algorithm::Crc32Iscsi);
         let data = b"123456789";
         let expected_checksum = 0xe3069283;
-        assert!(crc32.check_crc(data, expected_checksum));
-    }
-
-    #[test]
-    fn test_crc32_checkcrc_not_match() {
-        let crc32 = Crc32::new(Algorithm::Crc32Iscsi);
-        let data = b"123456789";
-        let wrong_checksum = 0x12345678;
-        assert!(!crc32.check_crc(data, wrong_checksum));
+        let mut reader = std::io::Cursor::new(data);
+        let crc32_result = crc32.from_reader(&mut reader).unwrap();
+        assert_eq!(crc32_result, expected_checksum);
     }
 }

@@ -346,7 +346,7 @@ pub fn check_hash(data: &[u8], digest: &RafsDigest, digester: digest::Algorithm)
 
 /// Check CRC of data matches provided one
 pub fn check_crc(data: &[u8], crc_digest: u32, crc_checker: crc::Algorithm) -> bool {
-    crc::Crc32::new(crc_checker).check_crc(data, crc_digest)
+    crc_digest == crc::Crc32::new(crc_checker).from_buf(data)
 }
 
 #[cfg(test)]

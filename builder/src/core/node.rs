@@ -497,7 +497,7 @@ impl Node {
             chunk.set_id(RafsDigest::from_buf(buf, ctx.digester));
             if ctx.crc_checker != crc::Algorithm::None {
                 chunk.set_has_crc(true);
-                chunk.set_crc32(crc::Crc32::new(ctx.crc_checker).checksum(buf));
+                chunk.set_crc32(crc::Crc32::new(ctx.crc_checker).from_buf(buf));
             }
         }
 
@@ -1241,10 +1241,12 @@ mod tests {
 
     #[test]
     fn test_set_external_crc32() {
-        let mut ctx = BuildContext::default();
-        ctx.crc_checker = crc::Algorithm::Crc32Iscsi;
-        ctx.attributes = Attributes {
-            crcs: HashMap::new(),
+        let mut ctx = BuildContext {
+            crc_checker: crc::Algorithm::Crc32Iscsi,
+            attributes: Attributes {
+                crcs: HashMap::new(),
+                ..Default::default()
+            },
             ..Default::default()
         };
         let target = PathBuf::from("/test_file");
