@@ -95,13 +95,21 @@ func TestRemoteHandler_Handle(t *testing.T) {
 		MaybeWithHTTPFunc: func(error) {},
 	}
 
+	annotations := map[string]string{
+		filePathKey: "file1.txt",
+		crcsKey:     "0x1234,0x5678",
+	}
 	handler := &RemoteHandler{
 		ctx:      context.Background(),
 		imageRef: "test-image",
 		remoter:  mockRemote,
 		manifest: ocispec.Manifest{
 			Layers: []ocispec.Descriptor{
-				{MediaType: "test-media-type", Digest: "test-digest"},
+				{
+					MediaType:   "test-media-type",
+					Digest:      "test-digest",
+					Annotations: annotations,
+				},
 			},
 		},
 		blobs: []backend.Blob{
@@ -119,6 +127,8 @@ func TestRemoteHandler_Handle(t *testing.T) {
 	assert.NotNil(t, backend)
 	assert.NotEmpty(t, fileAttrs)
 	assert.Equal(t, 3, len(fileAttrs))
+	assert.Equal(t, annotations[crcsKey], fileAttrs[0].Crcs)
+	assert.Equal(t, "", fileAttrs[1].Crcs)
 }
 
 func TestGetModelConfig(t *testing.T) {
