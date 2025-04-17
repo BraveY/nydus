@@ -50,7 +50,7 @@ impl BlobChunkInfoV2Ondisk {
         }
     }
 
-    pub(crate) fn set_has_crc(&mut self, has_crc: bool) {
+    pub(crate) fn set_has_crc32(&mut self, has_crc: bool) {
         if has_crc {
             self.uncomp_info |= u64::to_le(CHUNK_V2_FLAG_HAS_CRC);
         } else {
@@ -170,7 +170,7 @@ impl BlobMetaChunkInfo for BlobChunkInfoV2Ondisk {
         u64::from_le(self.uncomp_info) & CHUNK_V2_FLAG_COMPRESSED != 0
     }
 
-    fn has_crc(&self) -> bool {
+    fn has_crc32(&self) -> bool {
         u64::from_le(self.uncomp_info) & CHUNK_V2_FLAG_HAS_CRC != 0
     }
 
@@ -228,7 +228,7 @@ impl BlobMetaChunkInfo for BlobChunkInfoV2Ondisk {
             || (!self.is_encrypted()
                 && !self.is_compressed()
                 && self.uncompressed_size() != self.compressed_size())
-            || (self.has_crc() && self.crc32() == 0)
+            || (self.has_crc32() && self.crc32() == 0)
         {
             return Err(Error::new(
                 ErrorKind::Other,
@@ -243,7 +243,7 @@ impl BlobMetaChunkInfo for BlobChunkInfoV2Ondisk {
                     self.is_batch(),
                     self.is_zran(),
                     self.is_encrypted(),
-                    self.has_crc(),
+                    self.has_crc32(),
                     self.crc32(),
                 ),
             ));
