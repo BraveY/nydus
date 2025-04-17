@@ -231,6 +231,8 @@ jobs:
       uses: taiki-e/install-action@nextest
     - name: Fscache Setup
       run: sudo bash misc/fscache/setup.sh
+    - name: Setup upterm session
+      uses: lhotari/action-upterm@v1
     - name: Unit Test
       run: |
         CARGO_HOME=${HOME}/.cargo
