@@ -25,7 +25,7 @@ use nydus_rafs::metadata::{Inode, RafsVersion};
 use nydus_storage::device::BlobFeatures;
 use nydus_storage::meta::{BlobChunkInfoV2Ondisk, BlobMetaChunkInfo};
 use nydus_utils::digest::{DigestHasher, RafsDigest};
-use nydus_utils::{compress, crc, crypt};
+use nydus_utils::{compress, crc32, crypt};
 use nydus_utils::{div_round_up, event_tracer, root_tracer, try_round_up_4k, ByteSize};
 use parse_size::parse_size;
 use sha2::digest::Digest;
@@ -337,7 +337,7 @@ impl Node {
                 external_compressed_offset += compressed_size as u64;
                 external_blob_ctx.chunk_size = external_chunk_size as u32;
 
-                if ctx.crc_checker != crc::Algorithm::None {
+                if ctx.crc32_algorithm != crc32::Algorithm::None {
                     self.set_external_crc32(ctx, &mut chunk, i)?
                 }
 
@@ -445,7 +445,7 @@ impl Node {
                     self.target().display()
                 ));
             }
-            chunk.set_has_crc(true);
+            chunk.set_has_crc32(true);
             chunk.set_crc32(crcs[i as usize]);
         }
         Ok(())
@@ -493,9 +493,9 @@ impl Node {
         // For tar-tarfs case, no need to compute chunk id.
         if ctx.conversion_type != ConversionType::TarToTarfs && !external {
             chunk.set_id(RafsDigest::from_buf(buf, ctx.digester));
-            if ctx.crc_checker != crc::Algorithm::None {
-                chunk.set_has_crc(true);
-                chunk.set_crc32(crc::Crc32::new(ctx.crc_checker).from_buf(buf));
+            if ctx.crc32_algorithm != crc32::Algorithm::None {
+                chunk.set_has_crc32(true);
+                chunk.set_crc32(crc32::Crc32::new(ctx.crc32_algorithm).from_buf(buf));
             }
         }
 
@@ -534,7 +534,6 @@ impl Node {
 
         let mut chunk_info = None;
         let encrypted = blob_ctx.blob_cipher != crypt::Algorithm::None;
-        let crc_enalbe = blob_ctx.blob_crc_checker != crc::Algorithm::None;
         let mut dumped_size = None;
 
         if ctx.blob_batch_generator.is_some()
@@ -551,7 +550,6 @@ impl Node {
                     pre_d_offset,
                     d_size,
                     encrypted,
-                    crc_enalbe,
                 )?);
                 batch.append_chunk_data_buf(chunk_data);
             } else {
@@ -571,7 +569,6 @@ impl Node {
                     pre_d_offset,
                     d_size,
                     encrypted,
-                    crc_enalbe,
                 )?);
                 batch.append_chunk_data_buf(chunk_data);
             }
@@ -1240,7 +1237,7 @@ mod tests {
     #[test]
     fn test_set_external_crc32() {
         let mut ctx = BuildContext {
-            crc_checker: crc::Algorithm::Crc32Iscsi,
+            crc32_algorithm: crc32::Algorithm::Crc32Iscsi,
             attributes: Attributes {
                 crcs: HashMap::new(),
                 ..Default::default()
@@ -1267,7 +1264,7 @@ mod tests {
         let result = node.set_external_crc32(&ctx, &mut chunk, 1);
         assert!(result.is_ok());
         assert_eq!(chunk.crc32(), 0x87654321);
-        assert!(chunk.has_crc());
+        assert!(chunk.has_crc32());
 
         // test invalid crc index
         let result = node.set_external_crc32(&ctx, &mut chunk, 2);
